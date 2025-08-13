@@ -1,0 +1,65 @@
+[
+	{
+		"device_id": "1014",
+		"slave_id": "3",
+		"reg_add": "0",
+		"value": 230,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "3",
+		"reg_add": "2",
+		"value": 231,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "3",
+		"reg_add": "4",
+		"value": 229,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "3",
+		"reg_add": "56",
+		"value": 50,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "2",
+		"reg_add": "2",
+		"value": 7.1,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "2",
+		"reg_add": "3",
+		"value": 35,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "7",
+		"reg_add": "0",
+		"value": 100,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "8",
+		"reg_add": "0",
+		"value": 60,
+		"d_ttime": "2024-06-10 12:00:00"
+	},
+	{
+		"device_id": "1014",
+		"slave_id": "8",
+		"reg_add": "1",
+		"value": 40,
+		"d_ttime": "2024-06-10 12:00:00"
+	}
+]
