@@ -42,20 +42,62 @@ async function setupDatabase() {
         const sqlContent = fs.readFileSync(sqlFilePath, "utf8");
         console.log("SQL file loaded successfully");
         
-        // Split SQL into individual statements
-        const statements = sqlContent
-            .split(';')
-            .map(stmt => stmt.trim())
-            .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+        // Better SQL statement parsing that handles multi-line statements
+        const statements = [];
+        let currentStatement = '';
+        let inString = false;
+        let inParentheses = 0;
         
-        console.log(`Found ${statements.length} SQL statements to execute`);
+        for (let i = 0; i < sqlContent.length; i++) {
+            const char = sqlContent[i];
+            const nextChar = sqlContent[i + 1];
+            
+            // Handle string literals
+            if (char === "'" && !inString) {
+                inString = true;
+            } else if (char === "'" && inString) {
+                inString = false;
+            }
+            
+            // Handle parentheses for complex statements
+            if (char === '(' && !inString) {
+                inParentheses++;
+            } else if (char === ')' && !inString) {
+                inParentheses--;
+            }
+            
+            // Only split on semicolons when not in string or parentheses
+            if (char === ';' && !inString && inParentheses === 0) {
+                currentStatement += char;
+                if (currentStatement.trim()) {
+                    statements.push(currentStatement.trim());
+                }
+                currentStatement = '';
+            } else {
+                currentStatement += char;
+            }
+        }
+        
+        // Add any remaining statement
+        if (currentStatement.trim()) {
+            statements.push(currentStatement.trim());
+        }
+        
+        // Filter out empty statements and comments
+        const validStatements = statements.filter(stmt => 
+            stmt.length > 0 && 
+            !stmt.startsWith('--') && 
+            !stmt.trim().startsWith('--')
+        );
+        
+        console.log(`Found ${validStatements.length} SQL statements to execute`);
         
         // Execute each statement
-        for (let i = 0; i < statements.length; i++) {
-            const statement = statements[i];
+        for (let i = 0; i < validStatements.length; i++) {
+            const statement = validStatements[i];
             if (statement.trim()) {
                 try {
-                    console.log(`Executing statement ${i + 1}/${statements.length}...`);
+                    console.log(`Executing statement ${i + 1}/${validStatements.length}...`);
                     await client.query(statement);
                     console.log(`✓ Statement ${i + 1} executed successfully`);
                 } catch (error) {
@@ -63,10 +105,16 @@ async function setupDatabase() {
                     // Continue with other statements unless it's a critical error
                     if (error.code === '42P01') { // Table doesn't exist (expected for DROP statements)
                         console.log("  (This is expected for DROP statements on first run)");
+                    } else {
+                        // For other errors, log the statement that failed
+                        console.error("Failed statement:", statement.substring(0, 100) + "...");
                     }
                 }
             }
         }
+        
+        // Wait a moment for all statements to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Verify the setup
         console.log("\nVerifying database setup...");
