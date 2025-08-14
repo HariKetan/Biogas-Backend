@@ -21,6 +21,15 @@ async function resetDatabase() {
     try {
         console.log("Connected to PostgreSQL database");
         console.log("⚠️  WARNING: This will delete all data in the database!");
+        console.log("📋 Tables to be dropped:");
+        console.log("   - SENSOR_VALUE (sensor readings)")
+        console.log("   - SENSOR_PARAMETERS (sensor configuration)")
+        console.log("   - DEVICE_MANAGEMENT (device access control)")
+        console.log("   - DEVICE (device information)")
+        console.log("   - user_role_management (user permissions)")
+        console.log("   - user_details (user accounts)")
+        console.log("   - todo (task management)")
+        console.log("   - dashboard_data (dashboard view)")
         
         // Drop all tables in the correct order
         const dropQueries = [
@@ -34,14 +43,17 @@ async function resetDatabase() {
             "DROP VIEW IF EXISTS dashboard_data CASCADE"
         ];
         
-        console.log("Dropping existing tables...");
+        console.log("\n🗑️  Dropping existing tables...");
         for (const query of dropQueries) {
             await client.query(query);
             console.log(`✓ Dropped: ${query}`);
         }
         
-        console.log("\n✅ Database reset completed!");
-        console.log("Run 'node setup_database.js' to recreate the database schema.");
+        console.log("\n✅ Database reset completed successfully!");
+        console.log("💡 Next steps:");
+        console.log("   1. Run 'node setup_database.js' to recreate the database schema");
+        console.log("   2. The setup will include the corrected sensor parameters for device 1368");
+        console.log("   3. Start the MQTT broker to begin data collection");
         
     } catch (error) {
         console.error("❌ Database reset failed:", error);

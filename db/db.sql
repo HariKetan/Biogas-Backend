@@ -1,5 +1,46 @@
 -- Biogas Database Schema
 -- Create Tables
+--
+-- SENSOR PARAMETER STRUCTURE FOR DEVICE 1368:
+-- ===========================================
+-- This device uses a special register addressing scheme to handle multiple sensor channels:
+-- 
+-- Weight Sensor (SL_ID: 7):
+--   - Register: '0' (single value from D1)
+--   - Unit: KG
+--   - Range: 0-1000
+--
+-- Methane Sensors (SL_ID: 1):
+--   - Registers: '0_1', '0_2', '0_3', '0_4', '0_5', '0_6'
+--   - Values: D1, D2, D3, D4, D5, D6 from MQTT message
+--   - Unit: %
+--   - Range: 0-100
+--
+-- pH Sensors (SL_ID: 2):
+--   - Registers: '0_1', '0_2', '0_3', '0_4'
+--   - Values: D1, D2, D3, D4 from MQTT message
+--   - Unit: pH
+--   - Range: 0-14
+--
+-- MQTT MESSAGE FORMAT:
+-- ===================
+-- Messages from device 1368 contain multiple sensor values:
+-- {
+--   "Type": "MR",
+--   "ID": "1368",
+--   "SL_ID": "1",        // Slave ID for methane sensors
+--   "RegAd": "0",        // Base register address
+--   "Length": "6",       // Number of values
+--   "D1": "350",         // Methane1 value
+--   "D2": "650",         // Methane2 value
+--   "D3": "262",         // Methane3 value
+--   "D4": "28",          // Methane4 value
+--   "D5": "0.000",       // Methane5 value
+--   "D6": "0.000"        // Methane6 value
+-- }
+--
+-- The MQTT broker automatically maps these D1-D6 values to the corresponding
+-- register addresses (0_1, 0_2, 0_3, 0_4, 0_5, 0_6) for proper storage.
 
 -- Drop tables if they exist (for clean setup)
 DROP TABLE IF EXISTS SENSOR_VALUE CASCADE;
@@ -119,6 +160,8 @@ INSERT INTO SENSOR_PARAMETERS (SLAVE_ID, DEVICE_ID, REG_ADD, KEYS, MINVALUE, MAX
 ON CONFLICT (DEVICE_ID, REG_ADD, SLAVE_ID) DO NOTHING;
 
 -- Insert sensor parameters for new device 1368
+-- Note: This device uses multiple sensor channels with register addresses like '0_1', '0_2', etc.
+-- The MQTT broker maps incoming D1, D2, D3, D4 values to these register addresses
 INSERT INTO SENSOR_PARAMETERS (SLAVE_ID, DEVICE_ID, REG_ADD, KEYS, MINVALUE, MAXVALUE, SIUNIT, DESCRIPTION) VALUES
 ('7', '1368', '0', 'Weight', 0, 1000, 'KG', 'Weight Measurement'),
 ('1', '1368', '0_1', 'Methane1', 0, 100, '%', 'Methane Level 1'),

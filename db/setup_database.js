@@ -35,7 +35,7 @@ async function setupDatabase() {
         }
         
         // Execute SQL file using psql
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const psql = spawn('psql', [
                 '-U', dbConfig.user,
                 '-h', dbConfig.host,
@@ -60,10 +60,41 @@ async function setupDatabase() {
                 console.error(data.toString());
             });
             
-            psql.on('close', (code) => {
+            psql.on('close', async (code) => {
                 if (code === 0) {
                     console.log("✅ SQL file executed successfully");
-                    resolve();
+                    
+                    // Verify sensor parameters for device 1368
+                    try {
+                        console.log("\n🔍 Verifying sensor parameters for device 1368...");
+                        const verificationPool = new Pool(dbConfig);
+                        
+                        const verificationQuery = `
+                            SELECT SLAVE_ID, REG_ADD, KEYS, SIUNIT, COUNT(*) as count
+                            FROM SENSOR_PARAMETERS 
+                            WHERE DEVICE_ID = '1368' 
+                            GROUP BY SLAVE_ID, REG_ADD, KEYS, SIUNIT
+                            ORDER BY SLAVE_ID, REG_ADD
+                        `;
+                        
+                        const result = await verificationPool.query(verificationQuery);
+                        
+                        if (result.rows.length >= 11) { // Expected: 6 methane + 4 pH + 1 weight
+                            console.log("✅ Device 1368 sensor parameters verified successfully!");
+                            console.log(`📊 Found ${result.rows.length} sensor parameters:`);
+                            result.rows.forEach(row => {
+                                console.log(`   - ${row.keys}: ${row.reg_add} (${row.siunit})`);
+                            });
+                        } else {
+                            console.warn("⚠️  Warning: Expected 11 sensor parameters, found", result.rows.length);
+                        }
+                        
+                        await verificationPool.end();
+                        resolve();
+                    } catch (verificationError) {
+                        console.warn("⚠️  Verification failed, but database setup completed:", verificationError.message);
+                        resolve();
+                    }
                 } else {
                     console.error(`❌ psql exited with code ${code}`);
                     reject(new Error(`psql failed with code ${code}`));
