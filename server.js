@@ -85,6 +85,7 @@ app.post("/api/v1/adddevice", async (req, res) => {
 
 app.get("/api/v1/sensor_values", async (req, res) => {
 	try {
+		const deviceId = req.query.device_id || '1014'; // Default to 1014 if not specified
 		const result = await db.query(`
     SELECT
     sv.device_id AS "device_id",
@@ -103,13 +104,12 @@ FROM
 JOIN
     sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
 WHERE
-    sv.device_id = '1014'
+    sv.device_id = $1
 GROUP BY
     sv.device_id, sv.d_ttime
 ORDER BY
     "dtime" DESC;
-
-    `);
+    `, [deviceId]);
 
 		console.log(result.rows);
 		res.json(result.rows);
@@ -121,6 +121,7 @@ ORDER BY
 
 app.get("/api/v1/dashboard", async (req, res) => {
 	try {
+		const deviceId = req.query.device_id || '1014'; // Default to 1014 if not specified
 		const result = await db.query(` SELECT
         sv.device_id AS "device_id",
         MAX(CASE WHEN sp.reg_add = '0' AND sv.slave_id = '3' THEN sv.value END) AS "r",
@@ -138,17 +139,117 @@ app.get("/api/v1/dashboard", async (req, res) => {
     JOIN
         sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
     WHERE
-        sv.device_id = '1014'
+        sv.device_id = $1
     GROUP BY
         sv.device_id, sv.d_ttime
     ORDER BY
         "dtime" DESC
     LIMIT 1;
     
-    `);
+    `, [deviceId]);
 		res.status(200).json(result.rows);
 	} catch (err) {
 		console.log(err.message);
+	}
+});
+
+// Get data for device 1368 specifically
+app.get("/api/v1/device1368", async (req, res) => {
+	try {
+		const result = await db.query(`
+		SELECT
+			sv.device_id AS "device_id",
+			MAX(CASE WHEN sp.reg_add = '0' AND sv.slave_id = '7' THEN sv.value END) AS "weight",
+			MAX(CASE WHEN sp.reg_add = '0_1' AND sv.slave_id = '1' THEN sv.value END) AS "methane1",
+			MAX(CASE WHEN sp.reg_add = '0_2' AND sv.slave_id = '1' THEN sv.value END) AS "methane2",
+			MAX(CASE WHEN sp.reg_add = '0_3' AND sv.slave_id = '1' THEN sv.value END) AS "methane3",
+			MAX(CASE WHEN sp.reg_add = '0_4' AND sv.slave_id = '1' THEN sv.value END) AS "methane4",
+			MAX(CASE WHEN sp.reg_add = '0_5' AND sv.slave_id = '1' THEN sv.value END) AS "methane5",
+			MAX(CASE WHEN sp.reg_add = '0_6' AND sv.slave_id = '1' THEN sv.value END) AS "methane6",
+			MAX(CASE WHEN sp.reg_add = '0_1' AND sv.slave_id = '2' THEN sv.value END) AS "ph1",
+			MAX(CASE WHEN sp.reg_add = '0_2' AND sv.slave_id = '2' THEN sv.value END) AS "ph2",
+			MAX(CASE WHEN sp.reg_add = '0_3' AND sv.slave_id = '2' THEN sv.value END) AS "ph3",
+			MAX(CASE WHEN sp.reg_add = '0_4' AND sv.slave_id = '2' THEN sv.value END) AS "ph4",
+			MAX(sv.d_ttime) AS "dtime",
+			MAX(sv.u_time) AS "u_time"
+		FROM
+			sensor_value sv
+		JOIN
+			sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
+		WHERE
+			sv.device_id = '1368'
+		GROUP BY
+			sv.device_id, sv.d_ttime
+		ORDER BY
+			"dtime" DESC
+		LIMIT 1;
+		`);
+		res.status(200).json(result.rows);
+	} catch (err) {
+		console.log(err.message);
+		res.status(500).json({ error: err.message });
+	}
+});
+
+// Get detailed individual sensor values for device 1368
+app.get("/api/v1/device1368/sensors", async (req, res) => {
+	try {
+		const result = await db.query(`
+		SELECT
+			sv.device_id,
+			sv.slave_id,
+			sv.reg_add,
+			sp.keys AS sensor_name,
+			sp.siunit,
+			sv.value,
+			sv.d_ttime,
+			sv.u_time
+		FROM
+			sensor_value sv
+		JOIN
+			sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
+		WHERE
+			sv.device_id = '1368'
+		ORDER BY
+			sv.slave_id, sv.reg_add, sv.u_time DESC;
+		`);
+		res.status(200).json(result.rows);
+	} catch (err) {
+		console.log(err.message);
+		res.status(500).json({ error: err.message });
+	}
+});
+
+// Get all devices with their latest sensor data
+app.get("/api/v1/all-devices-data", async (req, res) => {
+	try {
+		const result = await db.query(`
+		SELECT DISTINCT ON (sv.device_id)
+			sv.device_id AS "device_id",
+			MAX(CASE WHEN sp.reg_add = '0' AND sv.slave_id = '3' THEN sv.value END) AS "r",
+			MAX(CASE WHEN sp.reg_add = '2' AND sv.slave_id = '3' THEN sv.value END) AS "y",
+			MAX(CASE WHEN sp.reg_add = '4' AND sv.slave_id = '3' THEN sv.value END) AS "b",
+			MAX(CASE WHEN sp.reg_add = '56' AND sv.slave_id = '3' THEN sv.value END) AS "frequency",
+			MAX(CASE WHEN sp.reg_add = '2' AND sv.slave_id = '2' THEN sv.value END) AS "ph",
+			MAX(CASE WHEN sp.reg_add = '3' AND sv.slave_id = '2' THEN sv.value END) AS "temperature",
+			MAX(CASE WHEN sp.reg_add = '0' AND sv.slave_id = '7' THEN sv.value END) AS "weight",
+			MAX(CASE WHEN sp.reg_add = '0' AND sv.slave_id = '8' THEN sv.value END) AS "moisture",
+			MAX(CASE WHEN sp.reg_add = '1' AND sv.slave_id = '8' THEN sv.value END) AS "humidity",
+			MAX(sv.d_ttime) AS "dtime",
+			MAX(sv.u_time) AS "u_time"
+		FROM
+			sensor_value sv
+		JOIN
+			sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
+		GROUP BY
+			sv.device_id, sv.d_ttime
+		ORDER BY
+			sv.device_id, "dtime" DESC;
+		`);
+		res.status(200).json(result.rows);
+	} catch (err) {
+		console.log(err.message);
+		res.status(500).json({ error: err.message });
 	}
 });
 

@@ -100,6 +100,11 @@ INSERT INTO DEVICE (DEVICE_ID, LOGITUDE, LATITUDE, DESCRIPTION)
 VALUES ('1014', '190273', '029380', 'Biogas Plant Location')
 ON CONFLICT (DEVICE_ID) DO NOTHING;
 
+-- Insert new device 1368
+INSERT INTO DEVICE (DEVICE_ID, LOGITUDE, LATITUDE, DESCRIPTION) 
+VALUES ('1368', '190274', '029381', 'Biogas Plant Location 2')
+ON CONFLICT (DEVICE_ID) DO NOTHING;
+
 -- Insert sensor parameters
 INSERT INTO SENSOR_PARAMETERS (SLAVE_ID, DEVICE_ID, REG_ADD, KEYS, MINVALUE, MAXVALUE, SIUNIT, DESCRIPTION) VALUES
 ('3', '1014', '0', 'R', 0, 1000, 'Volts', 'R Phase Voltage'),
@@ -111,6 +116,21 @@ INSERT INTO SENSOR_PARAMETERS (SLAVE_ID, DEVICE_ID, REG_ADD, KEYS, MINVALUE, MAX
 ('7', '1014', '0', 'Weight', 0, 5000, 'KG', 'Weight Measurement'),
 ('8', '1014', '0', 'Moisture', 0, 100, '%', 'Moisture Content'),
 ('8', '1014', '1', 'Humidity', 0, 100, '%', 'Humidity Level')
+ON CONFLICT (DEVICE_ID, REG_ADD, SLAVE_ID) DO NOTHING;
+
+-- Insert sensor parameters for new device 1368
+INSERT INTO SENSOR_PARAMETERS (SLAVE_ID, DEVICE_ID, REG_ADD, KEYS, MINVALUE, MAXVALUE, SIUNIT, DESCRIPTION) VALUES
+('7', '1368', '0', 'Weight', 0, 1000, 'KG', 'Weight Measurement'),
+('1', '1368', '0_1', 'Methane1', 0, 100, '%', 'Methane Level 1'),
+('1', '1368', '0_2', 'Methane2', 0, 100, '%', 'Methane Level 2'),
+('1', '1368', '0_3', 'Methane3', 0, 100, '%', 'Methane Level 3'),
+('1', '1368', '0_4', 'Methane4', 0, 100, '%', 'Methane Level 4'),
+('1', '1368', '0_5', 'Methane5', 0, 100, '%', 'Methane Level 5'),
+('1', '1368', '0_6', 'Methane6', 0, 100, '%', 'Methane Level 6'),
+('2', '1368', '0_1', 'pH1', 0, 14, 'pH', 'pH Level 1'),
+('2', '1368', '0_2', 'pH2', 0, 14, 'pH', 'pH Level 2'),
+('2', '1368', '0_3', 'pH3', 0, 14, 'pH', 'pH Level 3'),
+('2', '1368', '0_4', 'pH4', 0, 14, 'pH', 'pH Level 4')
 ON CONFLICT (DEVICE_ID, REG_ADD, SLAVE_ID) DO NOTHING;
 
 -- Create indexes for better performance
@@ -138,7 +158,7 @@ FROM
 JOIN
     sensor_parameters sp ON sv.device_id = sp.device_id AND sv.slave_id = sp.slave_id AND sv.reg_add = sp.reg_add
 WHERE
-    sv.device_id = '1014'
+    sv.device_id IN ('1014', '1368')
 GROUP BY
     sv.device_id, sv.d_ttime
 ORDER BY
